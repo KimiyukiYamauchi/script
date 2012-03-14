@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# timein - 指定されたタイムゾーンまたは地理ゾーンの現在時刻を表示する。
+# 引数の指定がない場合には、世界協定時(UTC)/グリニッジ標準時(GMT)
+# の時刻を表示する。引数に "list" が指定された場合には、既知のタイムゾーン
+# と地理ゾーンの一覧を表示する。引数に地理ゾーンを指定する場合には、
+# 地域/都市とするか、または都市抱けを指定する（地域だけの指定はできない）
+
+# タイムゾーンデータベースは http://www.twinsun.com/tz/tz-link.htm
+# で参照できる。
+
+zonedir="/usr/share/zoneinfo"
+
+if [ ! -d $zonedir ] ; then
+	echo "No time zone database at $zonedir." >&2 ; exit 1
+fi
+
+if [ -d "$zonedir/posix" ] ; then
+	zonedir=$zonedir/posix				# 最近の Linux システム場合
+fi
+
+if [ $# -eq 0 ] ; then
+	timezone="UTC"
+	mixedzone="UTC"
+elif [ "$1" = "list" ] ; then
+	( echo "All known time zones and regions defined on this system:"
+	cd $zonedir
+	find -L -type f -print | xargs -n 2 | \
+		awk '{ printf "  %-38s %-38s\n", $1, $2}'
+	) | more
+	exit 0
+else
+
+	region="$(dirname $1)"
+	zone="$(basename $1)"
+
+#	echo "region=$region"
+#	echo "zone=$zone"
+
+	# 指定された引数のままで一致するものがあればそれを使う。そうでない場合
+	# には、一致するものを探し出す必要がある。そのため、まず一致するものが
+	# いくつあるか調べ、その結果によって処理方法を変える
+
+#	echo "zonedir=$zonedir"
+#	echo "zone=$zone"
+
+	matchcnt="$(find -L $zonedir -name $zone -type f -print |
+		wc -l | sed 's/[^[:digit:]]//g' )"
+	
+#	echo "matchcnt=$matchcnt"
+
+	if [ "$matchcnt" -gt 0 ] ; then		# 少なくとも１つのファイルが一致した
+		if [ "$matchcnt" -gt 1 ] ; then	# ２つ以上のファイルが一致した
+			echo "\"$zone\" matches moer than one possible time zone record. " >&2
+			echo "Please use 'list' to see all known regions and time zones" >&2
+			exit 1
+		fi
+		match="$(find -L $zonedir -name $zone -type f -print )"
+		mixedzone="$zone"
+	else
+		# 地域とゾーンの最初の文字を大文字に、残りを小文字にする。
+	
+		echo "region=$region"
+		echo "zone=$zone"
+
+		mixedregion="$(echo ${region%${region#?}} | tr '[[:lower:]]' '[[:upper:]]')\
+$(echo ${region#?} | tr '[[:upper:]]' '[[:lower:]]')"
+		mixedzone="$(echo ${zone%${zone#?}} | tr '[[:lower:]]' '[[:upper:]]')\
+$(echo ${zone#?} | tr '[[:upper:]]' '[[:lower:]]')"
+
+		echo "mixedregion=$mixedregion"
+		echo "mixedzone=$mixedzone"
+
+		if [ "$mixedregin" != "." ] ; then
+			# 可能性が複数でも("Atlantic"など)、地域とゾーンが指定
+			# されていれば、指定された地域の指定されたゾーンだけを探す。
+			match="$(find -L $zonedir/$mixedregion -type f -name $mixedzone -print)"
+		else
+			match="$(find -L $zonedir -name $mixedzone -type f -print)"
+		fi
+
+		if [ -z "$match" ] ; then 	# 指定されたパターンに一致するファイルはない。
+			if [ ! -z $(find -L $zonedir -name $mixedzone -type d -print) ] ; then
+				echo \
+					"The region \"$1\" has more than one time zone. Please use 'list'" >&2
+			else	# 指定されたパターンに一致するディレクトリもない。
+				echo "Can't find an exact match for \"$1\". Please use 'list'" >&2
+			fi
+			echo "to see all known regions and time zones." >&2
+			exit 1
+		fi
+	fi
+	timezone="$match"
+fi
+
+nicetz=$(echo $timezone | sed "s|$zonedir/||g") # 出力を見やすくするため
+																								# の加工 
+
+echo It\'s $(TZ=$timezone date '+%A, %B %e, %Y, at %l:%M %p') in $nicetz
+
+exit 0

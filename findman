@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# findman - 指定されたセクションとパターンに該当するすべてのマニュアル
+# ページの中から、目的の文字列と一致する行を表示する
+
+match1="/tmp/$(basename $0).1.$$"
+matches="/tmp/$(basename $0).$$"
+manpagelist=""
+
+trap "rm -f $match1 $matches" EXIT
+
+case $#
+in
+	3 ) section="$1"	cmdpat="$2"		manpagepat="$3"					;;
+	2 ) section=""		cmdpat="$1"		manpagepat="$2"					;;
+	* ) echo "Usage: $0 [section] cmdpattern manpagepattern" >&2
+			exit 1
+esac
+
+if ! man -k "$cmdpat" | grep "($seection" > $match1 ; then
+	echo "No matches to pattern \"$cmdpat\". Try something broader?" >&2; exit 1
+fi
+
+cut -d\( -f1 < $match1 > $matches			# コマンド名だけを取り出す
+cat /dev/null > $match1								# ファイルを空にする
+
+for manpage in $(cat $matches)
+do
+	manpagelist="$manpagelist $manpage"
+	man $manpage | col -b | grep -i $manpagepat | \
+		sed "s/^/${manpage}: /" | tee -a $match1
+done
+
+if [ ! -s $match1 ] ; then
+cat << EOF
+Command pattern "$cmdpat" had matches, but within those there were no
+matches to your man page pattern "$manpagepat"
+Man pages checked:$manpagelist
+EOF
+fi

@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# validfloat -- 入力された浮動小数点数として有効かどうかを確認する。
+# 1.304e5 など科学表記は指定はできない
+
+# 入力された値は小数点を区切りとして２つの部分に分ける。まず、小数点の
+# 左側の部分が有効な整数であるかどうかを確認する。次に、小数点の右側の
+# 部分が負でない有効な整数であることを確認する（-30.5は有効だが、
+# -30.-8 は無効）
+
+. validint		# Bourne シェルの記述（.）で関数 validint を取り込む
+
+validfloat()
+{
+	fvalue="$1"
+
+#	echo "$(echo $fvalue | sed 's/[^.]//g')"
+
+	if [ ! -z $(echo $fvalue | sed 's/[^.]//g') ] ; then
+
+		decimalPart="$(echo $fvalue | cut -d. -f1)"
+		fractionalPart="$(echo $fvalue | cut -d. -f2)"
+
+#		echo "decimalPart=$decimalPart"
+#		echo "fractionalPart=$fractionalPart"
+
+		if [ ! -z $decimalPart ] ; then
+			if ! validint "$decimalPart" "" "" ; then
+				return 1
+			fi
+		fi
+
+		if [ "${fractionalPart%${fractionalPart#?}}" = "-" ] ; then
+			echo "Invalid Floating-point number: '-' not allowed after decimal point" >&2
+			return 1
+		fi
+		if [ "$fractionalPart" != "" ] ; then
+			if ! validint "$fractionalPart" "0" "" ; then
+				return 1
+			fi
+		fi
+
+		if [ "$decimalPart" = "-" -o -z "$decimalPart" ] ; then
+			if [ -z $fractionalPart ] ; then
+				echo "Invalid floating-point format." >&2 ; return 1
+			fi
+		fi
+
+	else
+		if [ "$value" = "-" ] ; then
+			echo "Invalid floating-point format." >&2 ; return 1
+		fi
+
+		if ! validint "$fvalue" "" "" ; then
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
+if validfloat $1 ; then
+	echo "$1 is a valid floating-point value"
+fi
+
+exit 0

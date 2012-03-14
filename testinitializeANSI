@@ -1,0 +1,11 @@
+#!/bin/bash
+
+. initializeANSI
+
+initializeANSI
+
+echo -e ${yellowf}This is a phrase in yellow${redb} and red${reset}
+echo -e ${boldon}This is bold${ulon} this is italics${reset} bye bye
+echo -e ${italicson}This is italics${italicoff} and this is not
+echo -e ${ulon}This is ul${uloff} and thi is not
+echo -e ${yellowf}${redb}Warning I ${yellowb}${redf}Warning II${reset}

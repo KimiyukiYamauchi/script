@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# newrm - rm の代替コマンド、ユーザのフォームディレクトリに作成した
+# ディレクトリを使って簡単な復元機能を提供する。ファイルだけでなく
+# ディレクトリも扱える。-f フラグが指定されると、ファイルは保存されず
+# に削除される
+
+# 重要！　各ユーザの隠しディレクトリは何らかの手段（cron など）を
+# 使って定期的に掃除したほうがよい。さもないと隠しディレクトリ内の
+# ファイルが際限なく増え続け、システムのディスクスペースを使いきって
+# しまう。
+
+mydir="$HOME/.deleted-files"
+realrm="/bin/rm"
+copy="/bin/cp -R"
+
+if [ $# -eq 0 ] ; then	# 使用法は rm　コマンドに出力させる
+	exec $realrm		# シェルのプロセスを /bin/rm で書き換える
+fi
+
+# まず -f フラグが指定されているかどうかを調べる。
+
+flags=""
+
+while getopts "dfiPRrvW" opt
+do
+	case $opt in
+		f ) exec $realrm "$@"			;; 		# スクリプトを終えて /bin/rm を実行する
+		* ) flags="$flags -$opt"	;;		# その他のフラグは /bin/rm に渡す。
+	esac
+done
+shift $(( $OPTIND -1 ))
+
+# $mydir が存在しなければ作成する
+
+if [ ! -d $mydir ] ; then
+	if [ ! -w $HOME ] ; then
+		echo "$0 failed:: can't create $mydir in $HOME" >&2
+		exit 1
+	fi
+	mkdir $mydir
+	chmod 700 $mydir				# セキュリティを考慮
+fi
+
+for arg
+do
+
+	#echo "arg=${arg}"
+
+	newname="$mydir/$(date "+%S.%M.%H.%d.%m").$(basename "$arg")"
+	if [ -f "$arg" ] ; then
+		$copy "$arg" "$newname"
+	elif [ -d "$arg" ] ; then
+		$copy "$arg" "$newname"
+	fi
+done
+
+exec $realrm $flags "$@"	# シェルのプロセスを /bin/rm で置き換える

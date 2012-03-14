@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# logrm - ファイルの削除操作を記録する。ただし、 -s フラグが指定された
+# 場合には記録しない
+
+removelog="/var/log/remove.log"
+
+if [ $# -eq 0 ] ; then
+	echo "Usage: $0 [-s] list of files or directories" >&2
+	exit 1
+fi
+
+if [ "$1" = "-s" ] ; then
+	# サイレント処理が指定された。削除操作は記録しない
+	shift
+else
+	#echo "$(date): ${USER}: $@" >> $removelog
+	logger -t logrm "${USER:-LOGNAME}: $*"
+fi
+
+/bin/rm "$@"
+
+exit 0

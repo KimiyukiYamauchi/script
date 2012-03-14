@@ -1,0 +1,14 @@
+#/bin/bash
+
+# remindme - データファイルから指定されたパターンに一致する行を検索する
+# 引数に指定がない場合には、データファイルの内容を表示する
+
+rememberfile="$HOME/.remember"
+
+if [ $# -eq 0 ] ; then
+	more $rememberfile
+else
+	grep -i "$@" $rememberfile | ${PAGER:-more}
+fi
+
+exit 0

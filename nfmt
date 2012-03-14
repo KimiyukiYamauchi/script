@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# nfmt - nroff を使った fmt、行の幅を指定する -w X、
+# ハイフネーションを有効にして各行の長さをできるだけ
+# 揃える -h の２つのフラグを追加。
+
+while getopts "hw:" opt; do
+	case $opt in
+		h ) hyph=1						;;
+		w ) width="$OPTARG"		;;
+	esac
+done
+shift $(($OPTIND -1))
+
+nroff << EOF
+.ll ${width:-72}
+.na
+.hy ${hyph:-0}
+.pl 1
+$(cat "$@")
+EOF
+
+exit 0

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# hilow - 簡単な数あてクイズ
+
+. library.sh
+
+biggest=100									# 当てる数の最大値 + 1
+guess=0											# ユーザーが入力した値
+guesses=0										# ユーザーが値を入力した回数
+seikai=$(( $$ % $biggest ))	# 0 から ($biggest -1) までの範囲のランダムな数
+
+while [ $guess -ne $seikai ] ; do
+	echo -n "Guess? " ; read guess
+
+	if ! validint "$guess" "" ""  ; then
+		echo "Plese enter a seikai. Use ^C to quit"
+		guess=0
+		echo "guess=${guess}"
+		continue
+	fi
+
+	if [ "$guess" -lt $seikai ] ; then
+		echo "...bigger!"
+	elif [ "$guess" -gt $seikai ] ; then
+		echo "...smaller!"
+	fi
+	guesses=$(( $guesses + 1))
+done
+
+echo "Right!! Guessed $number in $guesses guesses."
+
+exit 0 	

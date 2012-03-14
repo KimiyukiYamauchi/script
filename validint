@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# validint - 	入力が整数値として有効かどうかを確認する
+# 						負の整数も受け付ける
+
+validint()
+{
+	# 最初の整数が有効かどうかを確認する。次に、もし２番目、
+	# ３番目の引数が指定されていれば、それぞれの有効な値の
+	# 範囲の下限と上限として扱い、その範囲に収まっているかどうかも
+	# チェックする。２番目以降の引数が指定されていなければ、
+	# 値の範囲のチェックは行わない。
+
+	number=$1;	min=$2;		max=$3;
+
+	if [ -z $number ] ; then
+		echo "You didn't enter anything. Unacceptable." >&2 ; return 1
+	fi
+
+#	echo "${number#?}"
+#	echo "${number%17}"
+#	echo "${number%${number#?}}"
+#	echo "${number:0:1}"
+
+	if [ "${number%${number#?}}" = "-" ] ; then	# 最初の文字は"-"か
+	#if [ "${number:0:1}" = "-" ] ; then	# 最初の文字は"-"か
+		testvalue="${number#?}"		# 最初の文字を除いたものを testvalue とする
+	else
+		testvalue="$number"
+	fi
+
+#	echo "testvalue=${testvalue}"
+
+	nodigits="$(echo $testvalue | sed 's/[[:digit:]]//g')"
+
+	if [ ! -z $nodigits ] ; then
+		echo "Invalid number format! Only digits, no commas, spaces, etc." >&2
+		return 1
+	fi
+
+	if [ ! -z $min ] ; then
+		if [ "$number" -lt "$min" ] ; then
+			echo "Your value is too small: smallest acceptable value is $min" >&2
+			return 1
+		fi
+	fi
+	if	[ ! -z $max ] ; then
+		if [ "$number" -gt "$max" ] ; then
+			echo "Your value is to big: largest acceptable value is $max" >&2
+			return 1
+		fi
+	fi
+	return 0
+}	
+
+#if validint "$1" "$2" "$3" ; then
+#	echo "That input is a valid integar value within your constraints"
+#fi

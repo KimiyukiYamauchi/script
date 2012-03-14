@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echon()
+{
+	echo "$*" | tr -d '\n'
+}
+
+echon "人工衛星の座標を入力してください: "

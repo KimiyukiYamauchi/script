@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# validalphanum - 入力された文字列が英数字だけかどうかチェックする
+
+validAlphaNum()
+{
+	# 引数が英数字だけの文字列なら 0 を返し、そうでない場合には、 1 を返す。
+
+	# 英数字以外の文字をすべて削除する。
+	compressed="$(echo $1 | sed -e 's/[^[:alnum:]]//g')"
+
+	if [ "$compressed" != "$1" ] ; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+# 簡単なコードを書いて使ってみる
+
+echo -n "Enter input: "
+read input
+
+if ! validAlphaNum "$input" ; then
+	echo "Your input must consist of only letters and numbers." >&2
+	exit 1
+else
+	echo "Input is valid."
+fi
+
+exit 0

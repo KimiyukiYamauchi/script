@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# inpath - 指定したプログラムが有効なプログラムかどうかを確認する
+# 絶対パスでプログラムが指定された場合には、該当するプログラムが
+# 存在するかどうかを確認し、そうでない場合には、PATHのディレクトリリスト
+# にプログラムが含まれているかどうかを確認する
+in_path()
+{
+	#コマンド名と PATH を受け取って、該当するコマンドを探す。コマンドが
+	#見つかり、かつ実行可能である場合には 0 を返し、そうでない場合には
+	# 1 を返す。IFS(内部フィードセパレータ)を一時的に変更するが、
+	#処理を終えたらもとの値に戻している点に注意
+
+	cmd=$1			path=$2			retval=1
+	oldIFS=$IFS	IFS=":"
+
+	for directory in $path
+	do
+		if [ -x $directory/$cmd ] ; then
+			retval=0			# ここを通れば $direcotory で $cmd が見つかった
+		fi
+	done
+	IFS=$oldIFS
+	return $retval
+}
+
+checkForCmdInPath()
+{
+	var=$1
+
+#	echo "${var%${var#?}}"
+#	echo ${var%${var#?}}
+
+	#以下で使っている ${var%${var#?}} は、変数の切り出しをネストさせて
+	#いる。一般に、${var#expr} とすると、変数 var のうち expr に一致する
+	#部分を var の先頭から取り除いたものが返され、${var%expr} とすると、
+	#変数 var のうち expr に一致する部分を var の最後から取り除いたものが
+	#返される。つまり、${var%${var#?}} は var の最初の１文字を返すことに
+	#なる。bash を使っているなら ${var:0:1} としてもよい。また、cut
+	#コマンドを使って cut -c1 としても最初の１文字を取り出せる
+
+	if [ "$var" != "" ] ; then
+		if [ "${var%${var#?}}" = "/" ] ; then
+			if [ ! -x $var ] ; then
+				return 1
+			fi
+		elif ! in_path $var $PATH ; then
+			return 2
+		fi
+	fi
+}
+
+if [ $# -ne 1 ] ; then
+	echo "Usage: $0 command" >&2 ; exit 1
+fi
+
+checkForCmdInPath "$1"
+case $? in
+	0 ) echo "$1 found in PATH"									;;
+	1 ) echo "$1 not found or not executable"		;;
+	2 ) echo "$1 not found in PATH"							;;
+esac
+
+exit 0

@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# nicenumber - 指定された数字をカンマで区切った形式に変換する。
+# 関数を呼び出す前に、桁区切りの文字と小数点の区切りの文字を
+# それぞれ DD と TD に設定しておく。関数の実行結果は nicenum
+# に格納されるが、呼び出し時に第２引数を指定した場合には
+# nicenum の値を出力する
+
+nicenumber()
+{
+	
+	# 入力され値は、ピリオド（.）を小数点の区切り文字と見なして
+	# 処理する。-d フラグで別の値を指定された場合を除き、出力される
+	# 値の小数点の区切り文字にはピリオド（.）が使われる
+
+	separator="$(echo $1 | sed 's/[[:digit:]]//g')"
+	echo "separator=${separator}"
+	if [ ! -z "$separator" -a "$separator" != "$DD" ] ; then
+		echo "$0: Unknown decimal separator $separator encountered." >&2
+		exit 1
+	fi
+
+	integer=$(echo $1 | cut -d${separator} -f1)	# 小数点の左側を取り出す
+	decimal=$(echo $1 | cut -d${separator} -f2)	# 小数点の右側を取り出す
+
+	if [ $decimal != $1 ] ; then
+		# 小数点以下の部分があれば取り込む
+		result="${DD:="."}$decimal"
+	fi
+
+	thousands=$integer
+
+	while [ $thousands -gt 999 ] ; do
+		remainder=$(($thousands % 1000))	# 下３桁の数字
+	
+		while [ ${#remainder} -lt 3 ] ; do	# 必要に応じて先行する 0 を付加
+			echo $remainder
+			echo ${#remainder}
+			remainder="0$remainder"
+		done
+
+		thousands=$(($thousands / 1000))	# 次の桁の処理（残っている場合）
+		result="${TD:=","}${remainder}${result}"	# 右から左へ文字列を連結
+		echo "result=${result}"
+		echo "remainder=${remainder}"
+	done
+
+	nicenum="${thousands}${result}"
+	if [ ! -z $2 ] ; then
+		echo $nicenum
+	fi
+}
+
+DD="."	# 小数点の区切り文字
+TD=","	# 桁の区切り文字
+
+while getopts "d:t:" opt; do
+	case $opt in
+		d ) DD="$OPTARG"	;;
+		t ) TD="$OPTARG"	;;
+	esac
+done
+shift $(($OPTIND -1))
+
+if [ $# -eq 0 ] ; then
+	echo "Usage: $(basename $0) [-d c] {-t c] numeric value"
+	echo " -d specifies the decimal point delimiter (default '.')"
+	echo " -t specifies the thousands delimiter (default ',')"
+	exit 0
+fi
+
+nicenumber $1 1
+
+exit 0
